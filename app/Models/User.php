@@ -24,6 +24,7 @@ class User extends Authenticatable
         'otp_expires_at',
         'is_verified',
         'password',
+        'allowed_navs',
     ];
 
     protected $hidden = [
@@ -41,6 +42,7 @@ class User extends Authenticatable
             'active' => 'boolean',
             'is_verified' => 'boolean',
             'trial_days' => 'integer',
+            'allowed_navs' => 'array',
         ];
     }
 

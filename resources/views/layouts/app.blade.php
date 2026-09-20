@@ -49,59 +49,98 @@
                 </div>
             </div>
 
+            @php
+                $authUser = Auth::user();
+                $allowedNavs = $authUser ? $authUser->allowed_navs : null;
+                $isOwnerUser = ($authUser && $authUser->id === 1);
+
+                $canNav = function($key) use ($allowedNavs, $isOwnerUser) {
+                    if ($isOwnerUser || is_null($allowedNavs) || empty($allowedNavs)) {
+                        return true;
+                    }
+                    return in_array($key, $allowedNavs);
+                };
+            @endphp
+
             <nav class="page-tabs">
+                @if($canNav('dashboard'))
                 <a href="{{ route('dashboard') }}" class="tab-btn {{ request()->routeIs('dashboard') ? 'active' : '' }}" title="Dashboard">
                     <span class="material-symbols-outlined">dashboard</span>
                     <span class="nav-label" data-i18n="nav.dashboard">Dashboard</span>
                 </a>
+                @endif
+                @if($canNav('billing'))
                 <a href="{{ route('billing') }}" class="tab-btn {{ request()->routeIs('billing') ? 'active' : '' }}" title="Billing">
                     <span class="material-symbols-outlined">receipt_long</span>
                     <span class="nav-label" data-i18n="nav.billing">Billing</span>
                 </a>
+                @endif
+                @if($canNav('invoices'))
                 <a href="{{ route('invoices.index') }}" class="tab-btn {{ request()->routeIs('invoices.*') ? 'active' : '' }}" title="Invoices">
                     <span class="material-symbols-outlined">description</span>
                     <span class="nav-label" data-i18n="nav.invoices">Invoices</span>
                 </a>
+                @endif
+                @if($canNav('delivery-sheets'))
                 <a href="{{ route('delivery-sheets.index') }}" class="tab-btn {{ request()->routeIs('delivery-sheets.*') ? 'active' : '' }}" title="Delivery Sheet">
                     <span class="material-symbols-outlined">local_shipping</span>
                     <span class="nav-label" data-i18n="nav.deliverySheet">Delivery Sheet</span>
                 </a>
+                @endif
+                @if($canNav('payments'))
                 <a href="{{ route('payments.index') }}" class="tab-btn {{ request()->routeIs('payments.*') ? 'active' : '' }}" title="Payments">
                     <span class="material-symbols-outlined">payments</span>
                     <span class="nav-label" data-i18n="nav.payments">Payments</span>
                 </a>
+                @endif
+                @if($canNav('customers'))
                 <a href="{{ route('customers.index') }}" class="tab-btn {{ request()->routeIs('customers.*') ? 'active' : '' }}" title="Customers">
                     <span class="material-symbols-outlined">groups</span>
                     <span class="nav-label" data-i18n="nav.customers">Customers</span>
                 </a>
+                @endif
+                @if($canNav('products'))
                 <a href="{{ route('products.index') }}" class="tab-btn {{ request()->routeIs('products.*') ? 'active' : '' }}" title="Products">
                     <span class="material-symbols-outlined">inventory_2</span>
                     <span class="nav-label" data-i18n="nav.products">Products</span>
                 </a>
+                @endif
+                @if($canNav('product-sales'))
                 <a href="{{ route('product-sales.index') }}" class="tab-btn {{ request()->routeIs('product-sales.*') ? 'active' : '' }}" title="Product Sales">
                     <span class="material-symbols-outlined">monitoring</span>
                     <span class="nav-label" data-i18n="nav.productSales">Product Sales</span>
                 </a>
+                @endif
+                @if($canNav('stock-register'))
                 <a href="{{ route('stock-register.index') }}" class="tab-btn {{ request()->routeIs('stock-register.*') ? 'active' : '' }}" title="Stock Register">
                     <span class="material-symbols-outlined">swap_vert</span>
                     <span class="nav-label">Stock Register</span>
                 </a>
+                @endif
+                @if($canNav('looms'))
                 <a href="{{ route('looms.index') }}" class="tab-btn {{ request()->routeIs('looms.*') ? 'active' : '' }}" title="Looms">
                     <span class="material-symbols-outlined">precision_manufacturing</span>
                     <span class="nav-label">Looms</span>
                 </a>
+                @endif
+                @if($canNav('workers'))
                 <a href="{{ route('workers.index') }}" class="tab-btn {{ request()->routeIs('workers.*') ? 'active' : '' }}" title="Worker">
                     <span class="material-symbols-outlined">engineering</span>
                     <span class="nav-label" data-i18n="nav.workers">Worker</span>
                 </a>
+                @endif
+                @if($canNav('borrows'))
                 <a href="{{ route('borrows.index') }}" class="tab-btn {{ request()->routeIs('borrows.*') ? 'active' : '' }}" title="Borrow">
                     <span class="material-symbols-outlined">account_balance_wallet</span>
                     <span class="nav-label" data-i18n="nav.borrows">Borrow</span>
                 </a>
+                @endif
+                @if($canNav('settings'))
                 <a href="{{ route('settings.index') }}" class="tab-btn {{ request()->routeIs('settings.*') ? 'active' : '' }}" title="Settings">
                     <span class="material-symbols-outlined">settings</span>
                     <span class="nav-label" data-i18n="nav.settings">Settings</span>
                 </a>
+                @endif
             </nav>
 
             <button id="logoutBtn" class="tab-btn logout-btn" type="button" title="Logout">

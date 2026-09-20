@@ -382,6 +382,7 @@ class AuthController extends Controller
             'active' => 'required|boolean',
             'password' => 'nullable|string|min:6',
             'business_name' => 'nullable|string',
+            'allowed_navs' => 'nullable|array',
         ]);
 
         $data = [
@@ -389,6 +390,10 @@ class AuthController extends Controller
             'email' => strtolower(trim($request->email)),
             'active' => (bool)$request->active,
         ];
+
+        if ($request->has('allowed_navs')) {
+            $data['allowed_navs'] = $request->allowed_navs;
+        }
 
         if (!empty($request->business_name)) {
             $data['business_name'] = trim($request->business_name);

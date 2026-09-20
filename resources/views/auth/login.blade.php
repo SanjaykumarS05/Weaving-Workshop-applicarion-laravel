@@ -39,10 +39,7 @@
         </div>
 
         <div class="auth-panel">
-            <div id="authHeaderTabs" class="auth-tabs {{ isset($require_otp) && $require_otp ? 'hidden' : '' }}">
-                <button type="button" id="tabSignIn" class="auth-tab active">Sign In</button>
-                <button type="button" id="tabSignUp" class="auth-tab">Sign Up</button>
-            </div>
+            <h2 id="authHeading" class="{{ isset($require_otp) && $require_otp ? 'hidden' : '' }}" style="font-size: 1.35rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #0f172a; margin-top: 0; margin-bottom: 20px;">Sign In to Your Account</h2>
 
             <!-- Sign In Form -->
             <form id="signInForm" class="stack {{ isset($require_otp) && $require_otp ? 'hidden' : '' }}" action="{{ route('signin') }}" method="POST">
@@ -59,25 +56,6 @@
                     <input type="password" id="signInPassword" name="password" required placeholder="Enter your password">
                 </label>
                 <button class="btn primary" type="submit" style="width: 100%; margin-top: 6px; padding: 13px;">Sign In</button>
-            </form>
-
-            <!-- Sign Up Form -->
-            <form id="signUpForm" class="stack hidden" action="{{ route('signup') }}" method="POST">
-                @csrf
-                <label>
-                    <span>Business Name</span>
-                    <input type="text" id="signUpBusinessName" name="business_name" required placeholder="My Business Pvt Ltd">
-                </label>
-                <label>
-                    <span>Email Address</span>
-                    <input type="email" id="signUpEmail" name="email" required placeholder="you@example.com">
-                </label>
-                <label>
-                    <span>Password</span>
-                    <input type="password" id="signUpPassword" name="password" required minlength="6">
-                </label>
-                <button class="btn primary" type="submit" style="width: 100%; margin-top: 6px; padding: 13px;">Create Account</button>
-                <p style="text-align: center; font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Free for 14 days. No credit card required.</p>
             </form>
 
             <!-- OTP Verification Form -->
@@ -123,13 +101,10 @@
     <script src="{{ asset('js/app.js') }}"></script>
     <script src="{{ asset('js/i18n.js') }}"></script>
     <script>
-        const tabSignIn = document.getElementById('tabSignIn');
-        const tabSignUp = document.getElementById('tabSignUp');
         const signInForm = document.getElementById('signInForm');
-        const signUpForm = document.getElementById('signUpForm');
         const otpForm = document.getElementById('otpForm');
         const forgotPassForm = document.getElementById('forgotPassForm');
-        const authHeaderTabs = document.getElementById('authHeaderTabs');
+        const authHeading = document.getElementById('authHeading');
         const authAlert = document.getElementById('authAlert');
 
         function showAlert(msg, isSuccess = false) {
@@ -148,44 +123,6 @@
             otpForm.classList.add('hidden');
             forgotPassForm.classList.add('hidden');
             authAlert.classList.add('hidden');
-        });
-
-        tabSignUp.addEventListener('click', () => {
-            tabSignUp.classList.add('active');
-            tabSignIn.classList.remove('active');
-            signUpForm.classList.remove('hidden');
-            signInForm.classList.add('hidden');
-            otpForm.classList.add('hidden');
-            forgotPassForm.classList.add('hidden');
-            authAlert.classList.add('hidden');
-        });
-
-        // Sign Up Submission
-        signUpForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                business_name: document.getElementById('signUpBusinessName').value,
-                email: document.getElementById('signUpEmail').value,
-                password: document.getElementById('signUpPassword').value
-            };
-
-            try {
-                const res = await apiFetch('/api/signup', {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
-                if (res.require_otp) {
-                    document.getElementById('otpEmailDisplay').textContent = res.email;
-                    authHeaderTabs.classList.add('hidden');
-                    signUpForm.classList.add('hidden');
-                    signInForm.classList.add('hidden');
-                    otpForm.classList.remove('hidden');
-                    showAlert(res.message, true);
-                }
-            } catch (err) {
-                showAlert(err.message, false);
-            }
         });
 
         // Sign In Submission
@@ -208,9 +145,8 @@
             } catch (err) {
                 if (err.require_otp || (err.message && err.message.includes('not verified'))) {
                     document.getElementById('otpEmailDisplay').textContent = payload.email;
-                    authHeaderTabs.classList.add('hidden');
+                    authHeading.classList.add('hidden');
                     signInForm.classList.add('hidden');
-                    signUpForm.classList.add('hidden');
                     otpForm.classList.remove('hidden');
                     showAlert('Email not verified yet. Verification OTP sent to your email.', false);
                 } else {
@@ -262,23 +198,22 @@
 
         // Forgot Password Handlers
         document.getElementById('forgotPassBtn').addEventListener('click', () => {
-            authHeaderTabs.classList.add('hidden');
+            authHeading.classList.add('hidden');
             signInForm.classList.add('hidden');
-            signUpForm.classList.add('hidden');
             otpForm.classList.add('hidden');
             forgotPassForm.classList.remove('hidden');
             authAlert.classList.add('hidden');
         });
 
         document.getElementById('backFromForgotBtn').addEventListener('click', () => {
-            authHeaderTabs.classList.remove('hidden');
+            authHeading.classList.remove('hidden');
             forgotPassForm.classList.add('hidden');
             signInForm.classList.remove('hidden');
             authAlert.classList.add('hidden');
         });
 
         document.getElementById('backToSignInBtn').addEventListener('click', () => {
-            authHeaderTabs.classList.remove('hidden');
+            authHeading.classList.remove('hidden');
             otpForm.classList.add('hidden');
             signInForm.classList.remove('hidden');
             authAlert.classList.add('hidden');

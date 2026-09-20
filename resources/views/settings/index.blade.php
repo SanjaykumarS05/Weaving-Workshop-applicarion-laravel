@@ -160,7 +160,7 @@
                     </td>
                     <td style="text-align: right;">
                         <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                            <button onclick="openEditTeammateModal({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->business_name ?? $u->name) }}', '{{ addslashes($u->email) }}', {{ $u->active ? 1 : 0 }})" class="btn secondary sm" style="padding: 6px 12px; font-size: 0.82rem;">Edit / Reset Pass</button>
+                            <button onclick="openEditTeammateModal({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->business_name ?? $u->name) }}', '{{ addslashes($u->email) }}', {{ $u->active ? 1 : 0 }}, {{ json_encode($u->allowed_navs ?? []) }})" class="btn secondary sm" style="padding: 6px 12px; font-size: 0.82rem;">Edit / Permissions</button>
                             <button onclick="deleteTeammate({{ $u->id }}, '{{ addslashes($u->name) }}')" class="btn danger sm" style="padding: 6px 12px; font-size: 0.82rem;">Delete</button>
                         </div>
                     </td>
@@ -206,40 +206,142 @@
     </div>
 </div>
 
-<!-- Edit Company User Modal -->
+<!-- Edit Company User Modal with 2 Tabs -->
 <div id="editTeamUserModal" class="modal-backdrop hidden">
-    <div class="modal-card" style="max-width: 480px;">
-        <h3 style="margin-top: 0; font-size: 1.2rem;">Edit User Account & Password</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">System Owner can edit company name, user email, active status, or reset password.</p>
+    <div class="modal-card" style="max-width: 520px; border-radius: 16px;">
+        <h3 style="margin-top: 0; font-size: 1.2rem; font-weight: 800; color: var(--text-color);">Edit User Account & Permissions</h3>
+        
+        <!-- Tab Navigation Buttons -->
+        <div style="display: flex; gap: 6px; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 20px;">
+            <button type="button" id="tabBtnAccount" onclick="switchEditUserTab('account')" style="flex: 1; border-radius: 8px; font-weight: 700; font-size: 0.85rem; padding: 9px 12px; background: #ffffff; color: #4f46e5; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">person</span>
+                1. Account Details
+            </button>
+            <button type="button" id="tabBtnNavs" onclick="switchEditUserTab('navs')" style="flex: 1; border-radius: 8px; font-weight: 600; font-size: 0.85rem; padding: 9px 12px; background: transparent; color: #64748b; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">checklist</span>
+                2. Navigation Permissions
+            </button>
+        </div>
+
         <form id="editTeamUserForm" class="stack">
             <input type="hidden" id="editUserId">
-            <label>
-                <span>Company / Business Name</span>
-                <input id="editUserBusinessName" type="text">
-            </label>
-            <label>
-                <span>User Contact Name *</span>
-                <input id="editUserName" type="text" required>
-            </label>
-            <label>
-                <span>Email Address *</span>
-                <input id="editUserEmail" type="email" required>
-            </label>
-            <label>
-                <span>Reset Password</span>
-                <input id="editUserPassword" type="password" minlength="6" placeholder="Enter new password (leave blank to keep current)">
-            </label>
-            <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--card-border);">
-                <div>
-                    <strong style="display: block; font-size: 0.9rem;">Account Active Status</strong>
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">Allow user to sign in to application</span>
+
+            <!-- Tab 1: Account Information -->
+            <div id="tabContentAccount" class="tab-pane">
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 14px 0;">Edit company name, user contact, email, reset password, or active status.</p>
+                <div class="stack">
+                    <label>
+                        <span>Company / Business Name</span>
+                        <input id="editUserBusinessName" type="text">
+                    </label>
+                    <label>
+                        <span>User Contact Name *</span>
+                        <input id="editUserName" type="text" required>
+                    </label>
+                    <label>
+                        <span>Email Address *</span>
+                        <input id="editUserEmail" type="email" required>
+                    </label>
+                    <label>
+                        <span>Reset Password</span>
+                        <input id="editUserPassword" type="password" minlength="6" placeholder="Enter new password (leave blank to keep current)">
+                    </label>
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--card-border);">
+                        <div>
+                            <strong style="display: block; font-size: 0.9rem;">Account Active Status</strong>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Allow user to sign in to application</span>
+                        </div>
+                        <label class="switch-toggle">
+                            <input type="checkbox" id="editUserActive">
+                            <span class="slider-round"></span>
+                        </label>
+                    </div>
                 </div>
-                <label class="switch-toggle">
-                    <input type="checkbox" id="editUserActive">
-                    <span class="slider-round"></span>
-                </label>
             </div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+
+            <!-- Tab 2: Navigation Permissions Checklist -->
+            <div id="tabContentNavs" class="tab-pane hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <strong style="font-size: 0.9rem; display: block; color: var(--text-color);">Sidebar Navigation Access</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Checked navigation bars will be visible to this user</span>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" onclick="selectAllUserNavs(true)" class="btn secondary sm" style="padding: 4px 10px; font-size: 0.78rem;">Select All</button>
+                        <button type="button" onclick="selectAllUserNavs(false)" class="btn secondary sm" style="padding: 4px 10px; font-size: 0.78rem;">Clear All</button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 280px; overflow-y: auto; padding: 6px; border: 1px solid var(--card-border); border-radius: 8px; background: #f8fafc;">
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="dashboard" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #6366f1;">dashboard</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Dashboard</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="billing" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #10b981;">receipt_long</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Billing</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="invoices" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #3b82f6;">description</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Invoices</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="delivery-sheets" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #f59e0b;">local_shipping</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Delivery Sheet</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="payments" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #8b5cf6;">payments</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Payments</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="customers" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #ec4899;">groups</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Customers</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="products" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #14b8a6;">inventory_2</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Products</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="product-sales" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #06b6d4;">monitoring</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Product Sales</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="stock-register" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #f97316;">swap_vert</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Stock Register</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="looms" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #84cc16;">precision_manufacturing</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Looms</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="workers" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #6366f1;">engineering</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Worker</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="borrows" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #a855f7;">account_balance_wallet</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Borrow</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; background: #ffffff; border: 1px solid #e2e8f0; cursor: pointer; margin: 0; grid-column: span 2;">
+                        <input type="checkbox" class="edit-nav-checkbox" value="settings" style="width: 16px; height: 16px; accent-color: #6366f1;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #64748b;">settings</span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Settings</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--card-border); padding-top: 14px;">
                 <button onclick="hideModal('editTeamUserModal')" class="btn secondary" type="button">Cancel</button>
                 <button class="btn primary" type="submit">Save Changes</button>
             </div>
@@ -251,6 +353,47 @@
 
 @push('scripts')
 <script>
+function switchEditUserTab(tabName) {
+    const btnAcc = document.getElementById('tabBtnAccount');
+    const btnNav = document.getElementById('tabBtnNavs');
+    const contentAcc = document.getElementById('tabContentAccount');
+    const contentNav = document.getElementById('tabContentNavs');
+
+    if (tabName === 'account') {
+        btnAcc.style.background = '#ffffff';
+        btnAcc.style.color = '#4f46e5';
+        btnAcc.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        btnAcc.style.fontWeight = '700';
+
+        btnNav.style.background = 'transparent';
+        btnNav.style.color = '#64748b';
+        btnNav.style.boxShadow = 'none';
+        btnNav.style.fontWeight = '600';
+
+        contentAcc.classList.remove('hidden');
+        contentNav.classList.add('hidden');
+    } else {
+        btnNav.style.background = '#ffffff';
+        btnNav.style.color = '#4f46e5';
+        btnNav.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        btnNav.style.fontWeight = '700';
+
+        btnAcc.style.background = 'transparent';
+        btnAcc.style.color = '#64748b';
+        btnAcc.style.boxShadow = 'none';
+        btnAcc.style.fontWeight = '600';
+
+        contentNav.classList.remove('hidden');
+        contentAcc.classList.add('hidden');
+    }
+}
+
+function selectAllUserNavs(checked) {
+    document.querySelectorAll('.edit-nav-checkbox').forEach(cb => {
+        cb.checked = Boolean(checked);
+    });
+}
+
 function toggleTeamSectionVisibility(visible) {
     const container = document.getElementById('teamUserTableContainer');
     const addBtn = document.getElementById('addTeammateBtn');
@@ -281,13 +424,25 @@ async function toggleUserActiveStatus(userId, active, name, email, bizName) {
     }
 }
 
-function openEditTeammateModal(id, name, bizName, email, active) {
+function openEditTeammateModal(id, name, bizName, email, active, allowedNavs = []) {
     document.getElementById('editUserId').value = id;
     document.getElementById('editUserName').value = name;
     document.getElementById('editUserBusinessName').value = bizName || name;
     document.getElementById('editUserEmail').value = email;
     document.getElementById('editUserPassword').value = '';
     document.getElementById('editUserActive').checked = Boolean(active);
+
+    switchEditUserTab('account');
+
+    const navArray = Array.isArray(allowedNavs) ? allowedNavs : [];
+    document.querySelectorAll('.edit-nav-checkbox').forEach(cb => {
+        if (navArray.length === 0) {
+            cb.checked = true;
+        } else {
+            cb.checked = navArray.includes(cb.value);
+        }
+    });
+
     showModal('editTeamUserModal');
 }
 
@@ -409,12 +564,15 @@ document.addEventListener('DOMContentLoaded', () => {
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const userId = document.getElementById('editUserId').value;
+            const selectedNavs = Array.from(document.querySelectorAll('.edit-nav-checkbox:checked')).map(cb => cb.value);
+
             const payload = {
                 business_name: document.getElementById('editUserBusinessName').value,
                 name: document.getElementById('editUserName').value,
                 email: document.getElementById('editUserEmail').value,
                 active: document.getElementById('editUserActive').checked,
-                password: document.getElementById('editUserPassword').value || null
+                password: document.getElementById('editUserPassword').value || null,
+                allowed_navs: selectedNavs
             };
             try {
                 const res = await apiFetch(`/api/team-user/${userId}`, {
