@@ -10,18 +10,24 @@
     </div>
 
     <!-- Filter Bar -->
-    <form method="GET" action="{{ route('invoices.index') }}" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search Invoice No, Customer, Phone..." style="flex: 1; min-width: 200px;">
-        <input type="date" name="from_date" value="{{ request('from_date') }}">
-        <input type="date" name="to_date" value="{{ request('to_date') }}">
-        <select name="status">
+    <form method="GET" action="{{ route('invoices.index') }}" class="filter-bar">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search Invoice No, Customer, Phone..." class="filter-search-input">
+        <div class="filter-date-item">
+            <span>From:</span>
+            <input type="date" name="from_date" value="{{ request('from_date') }}">
+        </div>
+        <div class="filter-date-item">
+            <span>To:</span>
+            <input type="date" name="to_date" value="{{ request('to_date') }}">
+        </div>
+        <select name="status" style="width: 130px;">
             <option value="all">All Status</option>
             <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
             <option value="partial" {{ request('status') == 'partial' ? 'selected' : '' }}>Partial</option>
             <option value="unpaid" {{ request('status') == 'unpaid' ? 'selected' : '' }}>Unpaid</option>
         </select>
-        <button class="btn secondary" type="submit" data-i18n="common.search">Search</button>
-        <a href="{{ route('invoices.index') }}" class="btn ghost" data-i18n="common.reset">Reset</a>
+        <button class="btn secondary filter-reset-btn" type="submit" data-i18n="common.search">Search</button>
+        <a href="{{ route('invoices.index') }}" class="btn secondary filter-reset-btn" style="display: inline-flex; align-items: center;" data-i18n="common.reset">Reset</a>
     </form>
 
     <div class="table-responsive">

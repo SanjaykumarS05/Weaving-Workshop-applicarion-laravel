@@ -23,17 +23,21 @@ class SettingController extends Controller
             'composition_valid_days' => 30,
         ]);
 
-        $teamUsers = User::where('business_name', Auth::user()->business_name)->get();
+        $isOwner = (Auth::id() === 1);
+        $teamUsers = $isOwner 
+            ? User::where('business_name', Auth::user()->business_name)->orderBy('id', 'asc')->get() 
+            : collect([]);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
+                'isOwner' => $isOwner,
                 'setting' => $setting,
                 'teamUsers' => $teamUsers
             ]);
         }
 
-        return view('settings.index', compact('setting', 'teamUsers'));
+        return view('settings.index', compact('setting', 'teamUsers', 'isOwner'));
     }
 
     public function update(Request $request)

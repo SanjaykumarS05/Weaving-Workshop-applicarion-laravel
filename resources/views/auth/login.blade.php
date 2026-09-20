@@ -33,7 +33,7 @@
                     <span class="material-symbols-outlined" style="color: #6ee7b7;">check_circle</span> Payments, customers and sales in one dashboard
                 </li>
                 <li style="display: flex; align-items: center; gap: 12px; font-weight: 600;">
-                    <span class="material-symbols-outlined" style="color: #6ee7b7;">check_circle</span> Start with a free 14-day trial
+                    <span class="material-symbols-outlined" style="color: #6ee7b7;">check_circle</span> 100% Free & Unlimited Full Access
                 </li>
             </ul>
         </div>
@@ -49,14 +49,14 @@
                 @csrf
                 <label>
                     <span>Email Address</span>
-                    <input type="email" id="signInEmail" name="email" required placeholder="you@example.com" value="admin@example.com">
+                    <input type="email" id="signInEmail" name="email" required placeholder="you@company.com">
                 </label>
                 <label>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span>Password</span>
                         <button type="button" id="forgotPassBtn" class="btn ghost" style="padding: 0; font-size: 0.8rem; color: #6366f1; text-decoration: underline;">Forgot Password?</button>
                     </div>
-                    <input type="password" id="signInPassword" name="password" required value="admin123">
+                    <input type="password" id="signInPassword" name="password" required placeholder="Enter your password">
                 </label>
                 <button class="btn primary" type="submit" style="width: 100%; margin-top: 6px; padding: 13px;">Sign In</button>
             </form>

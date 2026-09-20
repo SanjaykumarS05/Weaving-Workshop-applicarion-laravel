@@ -56,12 +56,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Customers
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/api/customers', [CustomerController::class, 'index'])->name('api.customers.index');
     Route::post('/api/customers', [CustomerController::class, 'store'])->name('customers.store');
     Route::put('/api/customers/{id}', [CustomerController::class, 'update'])->name('customers.update');
     Route::delete('/api/customers/{id}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
     // Products
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/api/products', [ProductController::class, 'index'])->name('api.products.index');
     Route::post('/api/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/api/products/{id}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/api/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
@@ -73,6 +75,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/api/settings', [SettingController::class, 'update'])->name('settings.update');
 
-    // Team users
+    // Team users (Owner only)
     Route::post('/api/team-user', [AuthController::class, 'createTeamUser'])->name('team-user.create');
+    Route::put('/api/team-user/{id}', [AuthController::class, 'updateTeamUser'])->name('team-user.update');
+    Route::delete('/api/team-user/{id}', [AuthController::class, 'deleteTeamUser'])->name('team-user.destroy');
 });

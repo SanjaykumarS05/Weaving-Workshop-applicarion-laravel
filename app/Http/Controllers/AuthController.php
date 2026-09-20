@@ -40,8 +40,8 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => 'admin',
             'trial_started_at' => Carbon::now(),
-            'plan' => 'trial',
-            'trial_days' => 14,
+            'plan' => 'unlimited',
+            'trial_days' => 0,
             'active' => true,
             'email_otp' => $otp,
             'otp_expires_at' => $expiresAt,
@@ -315,5 +315,81 @@ class AuthController extends Controller
             'user' => $user,
             'trialStatus' => $user->trial_status
         ]);
+    }
+
+    public function createTeamUser(Request $request)
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser || $currentUser->id !== 1) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only primary workspace owner (User ID 1) can manage team users.'], 403);
+        }
+
+        $request->validate([
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'username' => 'required|string',
+        ]);
+
+        $user = User::create([
+            'name' => trim($request->username),
+            'email' => strtolower(trim($request->email)),
+            'business_name' => $currentUser->business_name,
+            'password' => Hash::make($request->password),
+            'role' => 'user',
+            'trial_started_at' => $currentUser->trial_started_at,
+            'plan' => 'unlimited',
+            'trial_days' => 0,
+            'active' => true,
+            'is_verified' => true,
+        ]);
+
+        return response()->json(['success' => true, 'user' => $user]);
+    }
+
+    public function updateTeamUser(Request $request, $id)
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser || $currentUser->id !== 1) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only primary workspace owner (User ID 1) can edit team users.'], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'active' => 'required|boolean',
+            'password' => 'nullable|string|min:6',
+        ]);
+
+        $data = [
+            'name' => trim($request->name),
+            'email' => strtolower(trim($request->email)),
+            'active' => (bool)$request->active,
+        ];
+
+        if (!empty($request->password)) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return response()->json(['success' => true, 'message' => 'Teammate details updated successfully.', 'user' => $user]);
+    }
+
+    public function deleteTeamUser($id)
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser || $currentUser->id !== 1) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only primary workspace owner (User ID 1) can delete team users.'], 403);
+        }
+
+        $user = User::findOrFail($id);
+        if ($user->id === $currentUser->id || $user->id === 1) {
+            return response()->json(['success' => false, 'message' => 'Owner account cannot be deleted.'], 422);
+        }
+
+        $user->delete();
+        return response()->json(['success' => true, 'message' => 'Teammate deleted successfully.']);
     }
 }

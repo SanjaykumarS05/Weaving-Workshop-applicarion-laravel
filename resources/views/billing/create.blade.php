@@ -8,15 +8,20 @@
 
     <form id="createInvoiceForm" class="stack">
         <!-- Customer & Date Header -->
-        <div class="grid two">
+        <div class="grid three">
             <label>
-                <span data-i18n="billing.customer">Customer Name</span>
-                <input id="customerName" type="text" list="customerDatalist" required placeholder="Type customer name">
-                <datalist id="customerDatalist"></datalist>
+                <span>Select Customer</span>
+                <select id="customerSelect">
+                    <option value="">-- Select Existing Customer --</option>
+                </select>
+            </label>
+            <label>
+                <span data-i18n="billing.customer">Customer Name *</span>
+                <input id="customerName" type="text" required placeholder="Type or select customer name">
             </label>
             <label>
                 <span data-i18n="billing.customerGstin">Customer GSTIN</span>
-                <input id="customerGstin" type="text" placeholder="29AAAAA0000A1Z5">
+                <input id="customerGstin" type="text" placeholder="33AAAAA0000A1Z5">
             </label>
         </div>
 
@@ -68,7 +73,7 @@
                 <table id="itemsTable">
                     <thead>
                         <tr>
-                            <th style="width: 30%;">Product / Description</th>
+                            <th style="width: 32%;">Product / Description</th>
                             <th>HSN Code</th>
                             <th>Unit</th>
                             <th>Qty</th>
@@ -87,15 +92,15 @@
         </div>
 
         <!-- Calculations & Summary Footer -->
-        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; margin-top: 24px;">
-            <div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; margin-top: 24px; align-items: start;">
+            <div style="min-width: 0;">
                 <label>
                     <span>Notes / Terms</span>
-                    <textarea id="invoiceNotes" rows="4" placeholder="Terms and conditions or notes..."></textarea>
+                    <textarea id="invoiceNotes" rows="4" placeholder="Terms and conditions or notes..." style="resize: vertical; width: 100%; max-width: 100%; box-sizing: border-box;"></textarea>
                 </label>
             </div>
 
-            <div style="background: #f8fafc; padding: 18px; border-radius: 10px; border: 1px solid var(--line);" class="stack">
+            <div style="background: #f8fafc; padding: 18px; border-radius: 10px; border: 1px solid var(--card-border);" class="stack">
                 <div style="display: flex; justify-content: space-between;">
                     <span>Subtotal:</span>
                     <strong id="lblSubtotal">₹0.00</strong>
@@ -120,8 +125,8 @@
                     <span>Round Off:</span>
                     <span id="lblRoundOff">₹0.00</span>
                 </div>
-                <hr style="border: none; border-top: 1px solid var(--line); margin: 4px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 1.15rem; color: var(--brand);">
+                <hr style="border: none; border-top: 1px solid var(--card-border); margin: 4px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 1.15rem; color: #6366f1;">
                     <strong>Grand Total:</strong>
                     <strong id="lblGrandTotal">₹0.00</strong>
                 </div>
@@ -157,24 +162,52 @@ let existingProducts = [];
 async function loadDataForBilling() {
     try {
         const [cData, pData] = await Promise.all([
-            apiFetch('/customers'),
-            apiFetch('/products')
+            apiFetch('/api/customers'),
+            apiFetch('/api/products')
         ]);
-        existingCustomers = cData.customers || [];
-        existingProducts = pData.products || [];
+        existingCustomers = cData.customers || cData.data || [];
+        existingProducts = pData.products || pData.data || [];
 
-        const datalist = document.getElementById('customerDatalist');
-        datalist.innerHTML = '';
-        existingCustomers.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.name;
-            datalist.appendChild(opt);
-        });
+        const custSelect = document.getElementById('customerSelect');
+        if (custSelect) {
+            custSelect.innerHTML = '<option value="">-- Select Existing Customer --</option>';
+            existingCustomers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.name} (${c.phone || c.email || 'No Contact'})`;
+                custSelect.appendChild(opt);
+            });
 
-        addItemRow();
+            custSelect.addEventListener('change', (e) => {
+                const cust = existingCustomers.find(c => c.id == e.target.value);
+                if (cust) {
+                    document.getElementById('customerName').value = cust.name || '';
+                    document.getElementById('customerPhone').value = cust.phone || '';
+                    document.getElementById('customerEmail').value = cust.email || '';
+                    document.getElementById('customerGstin').value = cust.gstin || '';
+                    document.getElementById('customerAddress').value = cust.address || '';
+                    if (cust.state) document.getElementById('customerState').value = cust.state;
+                }
+            });
+        }
+
+        updateAllProductSelects();
     } catch (e) {
-        console.error(e);
+        console.error('Failed loading billing data:', e);
     }
+}
+
+function updateAllProductSelects() {
+    document.querySelectorAll('.item-row').forEach(tr => {
+        const prodSelect = tr.querySelector('.product-select');
+        const currentVal = prodSelect.value;
+        let productOptions = '<option value="custom">-- Custom Item / Enter Name --</option>';
+        existingProducts.forEach(p => {
+            productOptions += `<option value="${p.id}">${p.name} (Stock: ${p.stock})</option>`;
+        });
+        prodSelect.innerHTML = productOptions;
+        if (currentVal) prodSelect.value = currentVal;
+    });
 }
 
 function addItemRow(productData = null) {
@@ -182,30 +215,38 @@ function addItemRow(productData = null) {
     const tr = document.createElement('tr');
     tr.className = 'item-row';
 
-    let productOptions = '<option value="">Custom Item</option>';
+    let productOptions = '<option value="custom">-- Custom Item / Enter Name --</option>';
     existingProducts.forEach(p => {
         productOptions += `<option value="${p.id}">${p.name} (Stock: ${p.stock})</option>`;
     });
 
     tr.innerHTML = `
         <td>
-            <select class="product-select" style="margin-bottom: 4px;">${productOptions}</select>
-            <input type="text" class="item-name" placeholder="Item Name" required>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <select class="product-select" style="flex: 1;">${productOptions}</select>
+                <input type="text" class="item-name hidden" placeholder="Enter Item Name" style="flex: 1;">
+            </div>
         </td>
-        <td><input type="text" class="item-hsn" placeholder="HSN/SAC"></td>
+        <td><input type="text" class="item-hsn" placeholder="HSN/SAC" style="width: 100px;"></td>
         <td>
             <select class="item-unit">
                 <option value="Kgs">Kgs</option>
                 <option value="Meter">Meter</option>
                 <option value="Pices">Pices</option>
                 <option value="Nos">Nos</option>
+                <option value="Bags">Bags</option>
+                <option value="Boxes">Boxes</option>
+                <option value="Ltrs">Ltrs</option>
+                <option value="Tonnes">Tonnes</option>
+                <option value="Set">Set</option>
+                <option value="Sq Ft">Sq Ft</option>
             </select>
         </td>
-        <td><input type="number" class="item-qty" value="1" min="0.01" step="any" required style="width: 70px;"></td>
-        <td><input type="number" class="item-rate" value="0.00" min="0" step="any" required style="width: 90px;"></td>
-        <td><input type="number" class="item-tax" value="12" min="0" step="any" style="width: 65px;"></td>
-        <td><strong class="item-total">₹0.00</strong></td>
-        <td><button class="btn danger remove-row-btn" type="button" style="padding: 4px 8px; font-size: 0.75rem;">X</button></td>
+        <td><input type="number" class="item-qty" value="1" min="0.01" step="any" required style="width: 75px;"></td>
+        <td><input type="number" class="item-rate" value="0.00" min="0" step="any" required style="width: 95px;"></td>
+        <td><input type="number" class="item-tax" value="12" min="0" step="any" style="width: 70px;"></td>
+        <td><strong class="item-total" style="font-size: 0.95rem;">₹0.00</strong></td>
+        <td><button class="btn danger remove-row-btn" type="button" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 6px;">✕</button></td>
     `;
 
     tbody.appendChild(tr);
@@ -217,16 +258,28 @@ function addItemRow(productData = null) {
     const rateInput = tr.querySelector('.item-rate');
     const taxInput = tr.querySelector('.item-tax');
 
+    // Default state: if Custom Item selected
+    if (prodSelect.value === 'custom') {
+        nameInput.classList.remove('hidden');
+    }
+
     prodSelect.addEventListener('change', (e) => {
-        const prod = existingProducts.find(p => p.id == e.target.value);
-        if (prod) {
-            nameInput.value = prod.name;
-            hsnInput.value = prod.hsn_code || '';
-            unitSelect.value = prod.unit || 'Kgs';
-            rateInput.value = prod.price;
-            taxInput.value = prod.tax_rate;
-            calculateInvoiceTotals();
+        if (e.target.value === 'custom') {
+            nameInput.classList.remove('hidden');
+            nameInput.value = '';
+            nameInput.focus();
+        } else {
+            nameInput.classList.add('hidden');
+            const prod = existingProducts.find(p => p.id == e.target.value);
+            if (prod) {
+                nameInput.value = prod.name;
+                hsnInput.value = prod.hsn_code || '';
+                unitSelect.value = prod.unit || 'Kgs';
+                rateInput.value = prod.price;
+                taxInput.value = prod.tax_rate;
+            }
         }
+        calculateInvoiceTotals();
     });
 
     tr.querySelectorAll('input, select').forEach(el => {
@@ -301,6 +354,7 @@ function calculateInvoiceTotals() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    addItemRow();
     loadDataForBilling();
     document.getElementById('addItemRowBtn').addEventListener('click', () => addItemRow());
     document.getElementById('supplyType').addEventListener('change', calculateInvoiceTotals);

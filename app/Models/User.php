@@ -76,39 +76,12 @@ class User extends Authenticatable
 
     public function getTrialStatusAttribute()
     {
-        if ($this->plan === 'unlimited') {
-            return [
-                'active' => true,
-                'unlimited' => true,
-                'daysLeft' => null,
-                'startedAt' => $this->trial_started_at ? $this->trial_started_at->toIso8601String() : null,
-                'endsAt' => null
-            ];
-        }
-
-        if (!$this->trial_started_at) {
-            return [
-                'active' => false,
-                'unlimited' => false,
-                'daysLeft' => 0,
-                'startedAt' => null,
-                'endsAt' => null
-            ];
-        }
-
-        $planDays = $this->trial_days > 0 ? $this->trial_days : 14;
-        $endsAt = (clone $this->trial_started_at)->addDays($planDays);
-        $now = Carbon::now();
-        $diffInSeconds = $now->diffInSeconds($endsAt, false);
-        $active = $diffInSeconds > 0;
-        $daysLeft = $active ? max(0, (int) ceil($diffInSeconds / (24 * 3600))) : 0;
-
         return [
-            'active' => $active,
-            'unlimited' => false,
-            'daysLeft' => $daysLeft,
-            'startedAt' => $this->trial_started_at->toIso8601String(),
-            'endsAt' => $endsAt->toIso8601String()
+            'active' => true,
+            'unlimited' => true,
+            'daysLeft' => null,
+            'startedAt' => $this->trial_started_at ? $this->trial_started_at->toIso8601String() : null,
+            'endsAt' => null
         ];
     }
 }

@@ -9,6 +9,13 @@
         <button onclick="showCustomerModal()" class="btn primary">+ Add Customer</button>
     </div>
 
+    <!-- Filter Bar -->
+    <form method="GET" action="{{ route('customers.index') }}" class="filter-bar">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search Customer Name, Phone, Email, GSTIN..." class="filter-search-input">
+        <button class="btn secondary filter-reset-btn" type="submit" data-i18n="common.search">Search</button>
+        <a href="{{ route('customers.index') }}" class="btn secondary filter-reset-btn" style="display: inline-flex; align-items: center;" data-i18n="common.reset">Reset</a>
+    </form>
+
     <div class="table-responsive">
         <table>
             <thead>
