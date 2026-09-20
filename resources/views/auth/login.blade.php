@@ -46,14 +46,19 @@
                 @csrf
                 <label>
                     <span>Email Address</span>
-                    <input type="email" id="signInEmail" name="email" required placeholder="you@company.com">
+                    <input type="email" id="signInEmail" name="email" value="{{ old('email') }}" required placeholder="you@company.com">
                 </label>
                 <label>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span>Password</span>
                         <button type="button" id="forgotPassBtn" class="btn ghost" style="padding: 0; font-size: 0.8rem; color: #6366f1; text-decoration: underline;">Forgot Password?</button>
                     </div>
-                    <input type="password" id="signInPassword" name="password" required placeholder="Enter your password">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="signInPassword" name="password" required placeholder="Enter your password" style="padding-right: 44px; width: 100%;">
+                        <button type="button" id="togglePasswordBtn" title="Show/Hide Password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: #64748b; padding: 4px; display: flex; align-items: center; justify-content: center; outline: none;">
+                            <span class="material-symbols-outlined" id="togglePasswordIcon" style="font-size: 20px;">visibility</span>
+                        </button>
+                    </div>
                 </label>
                 <button class="btn primary" type="submit" style="width: 100%; margin-top: 6px; padding: 13px;">Sign In</button>
             </form>
@@ -94,7 +99,13 @@
                 <button id="backFromForgotBtn" type="button" class="btn ghost" style="width: 100%;">Back to Sign In</button>
             </form>
 
+            @if ($errors->any())
+            <div id="authAlert" style="margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; background: #fee2e2; color: #b91c1c; border-left: 4px solid #ef4444;">
+                {{ $errors->first() }}
+            </div>
+            @else
             <div id="authAlert" class="hidden" style="margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600;"></div>
+            @endif
         </div>
     </div>
 
@@ -106,6 +117,18 @@
         const forgotPassForm = document.getElementById('forgotPassForm');
         const authHeading = document.getElementById('authHeading');
         const authAlert = document.getElementById('authAlert');
+
+        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+        const signInPassword = document.getElementById('signInPassword');
+        const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+        if (togglePasswordBtn && signInPassword && togglePasswordIcon) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const isPassword = signInPassword.type === 'password';
+                signInPassword.type = isPassword ? 'text' : 'password';
+                togglePasswordIcon.textContent = isPassword ? 'visibility_off' : 'visibility';
+            });
+        }
 
         function showAlert(msg, isSuccess = false) {
             authAlert.className = '';
@@ -150,7 +173,7 @@
                     otpForm.classList.remove('hidden');
                     showAlert('Email not verified yet. Verification OTP sent to your email.', false);
                 } else {
-                    showAlert(err.message || 'Invalid credentials', false);
+                    showAlert(err.message || 'Invalid email or password.', false);
                 }
             }
         });

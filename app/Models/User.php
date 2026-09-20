@@ -86,4 +86,50 @@ class User extends Authenticatable
             'endsAt' => null
         ];
     }
+
+    public function canAccessNav(?string $navKey): bool
+    {
+        if (empty($navKey)) {
+            return true;
+        }
+        if ($this->id === 1 || is_null($this->allowed_navs) || empty($this->allowed_navs)) {
+            return true;
+        }
+        return in_array($navKey, $this->allowed_navs, true);
+    }
+
+    public static function getNavOrder(): array
+    {
+        return [
+            'dashboard' => 'dashboard',
+            'billing' => 'billing',
+            'invoices' => 'invoices.index',
+            'delivery-sheets' => 'delivery-sheets.index',
+            'payments' => 'payments.index',
+            'customers' => 'customers.index',
+            'products' => 'products.index',
+            'product-sales' => 'product-sales.index',
+            'stock-register' => 'stock-register.index',
+            'looms' => 'looms.index',
+            'workers' => 'workers.index',
+            'borrows' => 'borrows.index',
+            'settings' => 'settings.index',
+        ];
+    }
+
+    public function getFirstAvailableNavRoute(): string
+    {
+        $navMap = self::getNavOrder();
+        foreach ($navMap as $navKey => $routeName) {
+            if ($this->canAccessNav($navKey)) {
+                return $routeName;
+            }
+        }
+        return 'dashboard';
+    }
+
+    public function getFirstAvailableNavUrl(): string
+    {
+        return route($this->getFirstAvailableNavRoute());
+    }
 }

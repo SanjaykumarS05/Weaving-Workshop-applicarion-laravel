@@ -17,11 +17,6 @@ class StockRegisterController extends Controller
         $userId = Auth::id();
         $workers = Worker::where('user_id', $userId)->orderBy('name', 'asc')->get();
 
-        // Auto-seed sample notebook entries if none exist for user
-        if (StockRegister::where('user_id', $userId)->count() === 0) {
-            $this->seedSampleEntries($userId);
-        }
-
         $query = StockRegister::with('worker')->where('user_id', $userId);
 
         if ($request->has('worker_id') && !empty($request->worker_id)) {
@@ -269,26 +264,5 @@ class StockRegisterController extends Controller
             'success' => true,
             'message' => 'Stock entry deleted successfully.'
         ]);
-    }
-
-    private function seedSampleEntries($userId)
-    {
-        $samples = [
-            ['entry_date' => '2026-03-02', 'item_name' => '30 PC', 'type' => 'out', 'details' => '440', 'qty_in' => 0, 'qty_out' => 60.000, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-04-04', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 23.000, 'qty_out' => 0, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-04-10', 'item_name' => '30 PC', 'type' => 'out', 'details' => '470', 'qty_in' => 0, 'qty_out' => 64.000, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-04-10', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 27.550, 'qty_out' => 0, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-05-09', 'item_name' => '30 PC', 'type' => 'out', 'details' => '470', 'qty_in' => 0, 'qty_out' => 64.000, 'conversion_notes' => '50 PC 1 kg Per 24 mts'],
-            ['entry_date' => '2026-05-10', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 35.600, 'qty_out' => 0, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-05-22', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 41.400, 'qty_out' => 0, 'conversion_notes' => '50 PC 1 kg Per 24 mts'],
-            ['entry_date' => '2026-06-12', 'item_name' => '30 PC', 'type' => 'out', 'details' => '440', 'qty_in' => 0, 'qty_out' => 60.000, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-06-13', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 33.900, 'qty_out' => 0, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-06-20', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 24.500, 'qty_out' => 0, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-            ['entry_date' => '2026-07-18', 'item_name' => '30 PC', 'type' => 'in',  'details' => null,  'qty_in' => 35.300, 'qty_out' => 0, 'conversion_notes' => '30 PC 1 kg Per 14 mts'],
-        ];
-
-        foreach ($samples as $s) {
-            StockRegister::create(array_merge($s, ['user_id' => $userId]));
-        }
     }
 }

@@ -31,7 +31,7 @@ Route::get('/reset-password', [AuthController::class, 'showResetForm'])->name('p
 Route::post('/api/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
 // Authenticated Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'nav.permission'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/api/dashboard/metrics', [DashboardController::class, 'getMetrics'])->name('dashboard.metrics');
 

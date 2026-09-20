@@ -17,7 +17,7 @@ class AuthController extends Controller
     public function showAuth(Request $request)
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect()->to(Auth::user()->getFirstAvailableNavUrl());
         }
         return view('auth.login');
     }
@@ -84,7 +84,7 @@ class AuthController extends Controller
 
         if ($user->is_verified) {
             Auth::login($user);
-            return response()->json(['success' => true, 'message' => 'Account already verified.', 'redirect' => route('dashboard')]);
+            return response()->json(['success' => true, 'message' => 'Account already verified.', 'redirect' => $user->getFirstAvailableNavUrl()]);
         }
 
         if ($user->email_otp !== trim($request->otp)) {
@@ -120,7 +120,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Email verified successfully!',
-            'redirect' => route('dashboard')
+            'redirect' => $user->getFirstAvailableNavUrl()
         ]);
     }
 
@@ -161,14 +161,14 @@ class AuthController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'Invalid email or password.'], 422);
             }
-            return back()->withErrors(['email' => 'Invalid credentials.']);
+            return back()->withInput()->withErrors(['email' => 'Invalid email or password.']);
         }
 
         if (!$user->active) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'Your account has been deactivated by system administrator.'], 403);
             }
-            return back()->withErrors(['email' => 'Your account has been deactivated by system administrator.']);
+            return back()->withInput()->withErrors(['email' => 'Your account has been deactivated by system administrator.']);
         }
 
         if (!$user->is_verified) {
@@ -205,11 +205,11 @@ class AuthController extends Controller
                 'success' => true,
                 'user' => $user,
                 'trialStatus' => $user->trial_status,
-                'redirect' => route('dashboard')
+                'redirect' => $user->getFirstAvailableNavUrl()
             ]);
         }
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended($user->getFirstAvailableNavUrl());
     }
 
     // Forgot Password Handling

@@ -17,11 +17,6 @@ class LoomController extends Controller
         $userId = Auth::id();
         $workers = Worker::where('user_id', $userId)->orderBy('name', 'asc')->get();
 
-        // Auto-seed sample notebook entries if none exist for user
-        if (Loom::where('user_id', $userId)->count() === 0) {
-            $this->seedSampleEntries($userId);
-        }
-
         $query = Loom::with('worker')->where('user_id', $userId);
 
         if ($request->has('worker_id') && !empty($request->worker_id)) {
@@ -248,24 +243,5 @@ class LoomController extends Controller
             'success' => true,
             'message' => 'Loom entry deleted successfully.'
         ]);
-    }
-
-    private function seedSampleEntries($userId)
-    {
-        $samples = [
-            ['entry_date' => '2026-03-02', 'type' => 'out', 'details' => '4000 E 2 Warp', 'qty_in' => 0, 'qty_out' => 2100.000, 'notes' => 'Warp beam issued to worker/loom'],
-            ['entry_date' => '2026-03-07', 'type' => 'out', 'details' => '4000 E 2 Warp', 'qty_in' => 0, 'qty_out' => 2160.000, 'notes' => 'Second warp beam issued to worker/loom'],
-            ['entry_date' => '2026-04-04', 'type' => 'in',  'details' => '170 x 1.90',    'qty_in' => 323.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-            ['entry_date' => '2026-04-10', 'type' => 'in',  'details' => '203 x 1.90',    'qty_in' => 386.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-            ['entry_date' => '2026-05-10', 'type' => 'in',  'details' => '262',           'qty_in' => 498.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-            ['entry_date' => '2026-05-22', 'type' => 'in',  'details' => '305',           'qty_in' => 580.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-            ['entry_date' => '2026-06-13', 'type' => 'in',  'details' => '279',           'qty_in' => 530.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-            ['entry_date' => '2026-06-20', 'type' => 'in',  'details' => '174',           'qty_in' => 330.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-            ['entry_date' => '2026-07-18', 'type' => 'in',  'details' => '260',           'qty_in' => 500.000, 'qty_out' => 0, 'notes' => 'Cloth received from worker'],
-        ];
-
-        foreach ($samples as $s) {
-            Loom::create(array_merge($s, ['user_id' => $userId]));
-        }
     }
 }
