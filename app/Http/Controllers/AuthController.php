@@ -7,6 +7,9 @@ use App\Models\User;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -27,6 +30,9 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
+        $otp = sprintf("%06d", mt_rand(100000, 999999));
+        $expiresAt = Carbon::now()->addMinutes(10);
+
         $user = User::create([
             'name' => $request->business_name,
             'email' => strtolower(trim($request->email)),
@@ -37,11 +43,68 @@ class AuthController extends Controller
             'plan' => 'trial',
             'trial_days' => 14,
             'active' => true,
+            'email_otp' => $otp,
+            'otp_expires_at' => $expiresAt,
+            'is_verified' => false,
         ]);
 
-        // Create default settings for user
-        Setting::create([
-            'user_id' => $user->id,
+        // Send OTP via Email
+        $this->sendOtpEmail($user->email, $otp);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'require_otp' => true,
+                'email' => $user->email,
+                'message' => 'Verification code sent to your email. Valid for 10 minutes.',
+                'debug_otp' => config('app.debug') ? $otp : null
+            ]);
+        }
+
+        return view('auth.login', [
+            'require_otp' => true,
+            'otp_email' => $user->email,
+            'otp_message' => "Verification code sent to {$user->email}. Valid for 10 minutes.",
+            'debug_otp' => config('app.debug') ? $otp : null
+        ]);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $user = User::where('email', strtolower(trim($request->email)))->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+        }
+
+        if ($user->is_verified) {
+            Auth::login($user);
+            return response()->json(['success' => true, 'message' => 'Account already verified.', 'redirect' => route('dashboard')]);
+        }
+
+        if ($user->email_otp !== trim($request->otp)) {
+            return response()->json(['success' => false, 'message' => 'Invalid verification code.'], 422);
+        }
+
+        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+            return response()->json(['success' => false, 'message' => 'Verification code has expired. Please request a new code.'], 422);
+        }
+
+        // Mark verified
+        $user->update([
+            'is_verified' => true,
+            'email_otp' => null,
+            'otp_expires_at' => null,
+            'email_verified_at' => Carbon::now()
+        ]);
+
+        // Create default settings if not exists
+        Setting::firstOrCreate(['user_id' => $user->id], [
             'profile_name' => $user->business_name,
             'profile_email' => $user->email,
             'profile_declaration' => 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
@@ -54,16 +117,35 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'user' => $user,
-                'trialStatus' => $user->trial_status,
-                'redirect' => route('dashboard')
-            ]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Email verified successfully!',
+            'redirect' => route('dashboard')
+        ]);
+    }
+
+    public function resendOtp(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        $user = User::where('email', strtolower(trim($request->email)))->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found.'], 404);
         }
 
-        return redirect()->route('dashboard');
+        $otp = sprintf("%06d", mt_rand(100000, 999999));
+        $user->update([
+            'email_otp' => $otp,
+            'otp_expires_at' => Carbon::now()->addMinutes(10)
+        ]);
+
+        $this->sendOtpEmail($user->email, $otp);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'New verification code sent to your email. Valid for 10 minutes.',
+            'debug_otp' => config('app.debug') ? $otp : null
+        ]);
     }
 
     public function signIn(Request $request)
@@ -73,30 +155,140 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (Auth::attempt(['email' => strtolower(trim($credentials['email'])), 'password' => $credentials['password']])) {
-            $request->session()->regenerate();
-            $user = Auth::user();
+        $user = User::where('email', strtolower(trim($credentials['email'])))->first();
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Invalid email or password.'], 422);
+            }
+            return back()->withErrors(['email' => 'Invalid credentials.']);
+        }
+
+        if (!$user->is_verified) {
+            // Generate OTP for unverified user
+            $otp = sprintf("%06d", mt_rand(100000, 999999));
+            $user->update([
+                'email_otp' => $otp,
+                'otp_expires_at' => Carbon::now()->addMinutes(10)
+            ]);
+            $this->sendOtpEmail($user->email, $otp);
 
             if ($request->wantsJson()) {
                 return response()->json([
-                    'success' => true,
-                    'user' => $user,
-                    'trialStatus' => $user->trial_status,
-                    'redirect' => route('dashboard')
-                ]);
+                    'success' => false,
+                    'require_otp' => true,
+                    'email' => $user->email,
+                    'message' => 'Your email is not verified yet. Verification code sent to email.'
+                ], 403);
             }
 
-            return redirect()->intended(route('dashboard'));
+            return view('auth.login', [
+                'require_otp' => true,
+                'otp_email' => $user->email,
+                'otp_message' => "Your email is not verified. Verification code sent to {$user->email}.",
+                'debug_otp' => config('app.debug') ? $otp : null
+            ]);
         }
+
+        Auth::login($user);
+        $request->session()->regenerate();
 
         if ($request->wantsJson()) {
             return response()->json([
-                'success' => false,
-                'message' => 'Invalid email or password.'
-            ], 422);
+                'success' => true,
+                'user' => $user,
+                'trialStatus' => $user->trial_status,
+                'redirect' => route('dashboard')
+            ]);
         }
 
-        return back()->withErrors(['email' => 'Invalid credentials.']);
+        return redirect()->intended(route('dashboard'));
+    }
+
+    // Forgot Password Handling
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        $user = User::where('email', strtolower(trim($request->email)))->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'We could not find a user with that email address.'], 404);
+        }
+
+        $token = Str::random(64);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            ['token' => Hash::make($token), 'created_at' => Carbon::now()]
+        );
+
+        $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
+
+        try {
+            Mail::raw("Hello,\n\nYou requested a password reset for your GST Billing Application account.\nClick the link below to set a new password:\n\n{$resetUrl}\n\nThis link will expire shortly.\n\nIf you did not request this, please ignore this email.", function ($message) use ($user) {
+                $message->to($user->email)->subject('Reset Password Notification - GST Billing');
+            });
+        } catch (\Exception $e) {
+            // Log fallback
+            \Log::info("Password reset link for {$user->email}: {$resetUrl}");
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset link sent to your email address.',
+            'reset_url' => config('app.debug') ? $resetUrl : null
+        ]);
+    }
+
+    public function showResetForm(Request $request)
+    {
+        return view('auth.reset-password', [
+            'token' => $request->token,
+            'email' => $request->email
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $record = DB::table('password_reset_tokens')->where('email', strtolower(trim($request->email)))->first();
+
+        if (!$record || !Hash::check($request->token, $record->token)) {
+            return response()->json(['success' => false, 'message' => 'This password reset token is invalid or expired.'], 422);
+        }
+
+        $user = User::where('email', strtolower(trim($request->email)))->first();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password has been reset successfully! You can now sign in with your new password.',
+            'redirect' => route('login')
+        ]);
+    }
+
+    private function sendOtpEmail($email, $otp)
+    {
+        try {
+            Mail::raw("Your GST Billing Application verification code is: {$otp}\n\nThis code will expire in 10 minutes. Do not share this code with anyone.", function ($message) use ($email) {
+                $message->to($email)->subject('Email Verification OTP Code - GST Billing');
+            });
+        } catch (\Exception $e) {
+            \Log::info("OTP Code for {$email}: {$otp}");
+        }
     }
 
     public function signOut(Request $request)
@@ -123,33 +315,5 @@ class AuthController extends Controller
             'user' => $user,
             'trialStatus' => $user->trial_status
         ]);
-    }
-
-    public function createTeamUser(Request $request)
-    {
-        $currentUser = Auth::user();
-        if (!$currentUser || $currentUser->role !== 'admin') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        $request->validate([
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'username' => 'required|string',
-        ]);
-
-        $user = User::create([
-            'name' => $request->username,
-            'email' => strtolower(trim($request->email)),
-            'business_name' => $currentUser->business_name,
-            'password' => Hash::make($request->password),
-            'role' => 'user',
-            'trial_started_at' => $currentUser->trial_started_at,
-            'plan' => $currentUser->plan,
-            'trial_days' => $currentUser->trial_days,
-            'active' => true,
-        ]);
-
-        return response()->json(['success' => true, 'user' => $user]);
     }
 }

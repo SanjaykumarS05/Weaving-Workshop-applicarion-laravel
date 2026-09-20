@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             'plan' => 'unlimited',
             'trial_days' => 0,
             'active' => true,
+            'is_verified' => true,
             'password' => Hash::make('admin123'),
         ]);
 

@@ -21,6 +21,9 @@ return new class extends Migration
             $table->string('plan')->default('trial');
             $table->integer('trial_days')->default(14);
             $table->boolean('active')->default(true);
+            $table->string('email_otp')->nullable();
+            $table->timestamp('otp_expires_at')->nullable();
+            $table->boolean('is_verified')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

@@ -20,6 +20,9 @@ class User extends Authenticatable
         'plan',
         'trial_days',
         'active',
+        'email_otp',
+        'otp_expires_at',
+        'is_verified',
         'password',
     ];
 
@@ -33,8 +36,10 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'trial_started_at' => 'datetime',
+            'otp_expires_at' => 'datetime',
             'password' => 'hashed',
             'active' => 'boolean',
+            'is_verified' => 'boolean',
             'trial_days' => 'integer',
         ];
     }

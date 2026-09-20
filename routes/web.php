@@ -19,6 +19,13 @@ Route::post('/api/signin', [AuthController::class, 'signIn'])->name('signin');
 Route::post('/api/logout', [AuthController::class, 'signOut'])->name('logout');
 Route::get('/api/me', [AuthController::class, 'me'])->name('me');
 
+// OTP & Forgot Password Routes
+Route::post('/api/verify-otp', [AuthController::class, 'verifyOtp'])->name('otp.verify');
+Route::post('/api/resend-otp', [AuthController::class, 'resendOtp'])->name('otp.resend');
+Route::post('/api/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/reset-password', [AuthController::class, 'showResetForm'])->name('password.reset');
+Route::post('/api/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+
 // Authenticated Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
