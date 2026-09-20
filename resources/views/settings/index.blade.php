@@ -107,43 +107,45 @@
         </label>
 
         <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-            <button class="btn primary" type="submit">Save Business Profile</button>
+            <button id="saveBusinessProfileBtn" class="btn primary" type="submit" disabled style="opacity: 0.5; cursor: not-allowed; transition: all 0.2s ease;">Save Business Profile</button>
         </div>
     </form>
 </div>
 
-<!-- Team User Management (Workspace Owner ID 1 Only) -->
+<!-- Registered Company Accounts & User Management (System Owner ID 1 Only) -->
 @if(Auth::id() === 1)
 <div class="card" style="margin-top: 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 16px;">
-            <h3 style="font-size: 1.1rem; margin: 0;">Team Users & Management</h3>
+            <h3 style="font-size: 1.1rem; margin: 0;">User Accounts & Company Access</h3>
             <div style="display: flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.08); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.2);">
-                <span style="font-size: 0.82rem; font-weight: 700; color: #4f46e5;">Show Team Section</span>
-                <label class="switch-toggle" title="Toggle Team Users section visibility">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #4f46e5;">Show Users Section</span>
+                <label class="switch-toggle" title="Toggle User Accounts section visibility">
                     <input type="checkbox" id="toggleTeamSection" checked onchange="toggleTeamSectionVisibility(this.checked)">
                     <span class="slider-round"></span>
                 </label>
             </div>
         </div>
-        <button id="addTeammateBtn" onclick="showModal('teamUserModal')" class="btn secondary">+ Add Teammate</button>
+        <button id="addTeammateBtn" onclick="showModal('teamUserModal')" class="btn secondary">+ Add Company User</button>
     </div>
 
     <div id="teamUserTableContainer" class="table-responsive">
         <table>
             <thead>
                 <tr>
-                    <th>Name</th>
+                    <th>Company Name</th>
+                    <th>User Name</th>
                     <th>Email</th>
-                    <th>Status</th>
+                    <th>Account Active Status</th>
                     <th>Active Toggle</th>
                     <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($teamUsers as $u)
+                @forelse($teamUsers as $u)
                 <tr>
-                    <td><strong>{{ $u->name }}</strong></td>
+                    <td><strong>{{ $u->business_name ?? $u->name }}</strong></td>
+                    <td>{{ $u->name }}</td>
                     <td>{{ $u->email }}</td>
                     <td>
                         <span id="userStatusBadge-{{ $u->id }}" class="badge {{ $u->active ? 'paid' : 'unpaid' }}">
@@ -151,38 +153,46 @@
                         </span>
                     </td>
                     <td>
-                        <label class="switch-toggle" title="Toggle active/inactive status">
-                            <input type="checkbox" {{ $u->active ? 'checked' : '' }} {{ $u->id === Auth::id() || $u->id === 1 ? 'disabled' : '' }} onchange="toggleUserActiveStatus({{ $u->id }}, this.checked, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}')">
+                        <label class="switch-toggle" title="Toggle active/inactive access">
+                            <input type="checkbox" {{ $u->active ? 'checked' : '' }} onchange="toggleUserActiveStatus({{ $u->id }}, this.checked, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}', '{{ addslashes($u->business_name ?? $u->name) }}')">
                             <span class="slider-round"></span>
                         </label>
                     </td>
                     <td style="text-align: right;">
                         <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                            <button onclick="openEditTeammateModal({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}', {{ $u->active ? 1 : 0 }})" class="btn secondary sm" style="padding: 6px 12px; font-size: 0.82rem;">Edit / Reset Pass</button>
-                            @if($u->id !== Auth::id() && $u->id !== 1)
+                            <button onclick="openEditTeammateModal({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->business_name ?? $u->name) }}', '{{ addslashes($u->email) }}', {{ $u->active ? 1 : 0 }})" class="btn secondary sm" style="padding: 6px 12px; font-size: 0.82rem;">Edit / Reset Pass</button>
                             <button onclick="deleteTeammate({{ $u->id }}, '{{ addslashes($u->name) }}')" class="btn danger sm" style="padding: 6px 12px; font-size: 0.82rem;">Delete</button>
-                            @endif
                         </div>
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 28px;">
+                        No other company user accounts registered yet.
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Add Team User Modal -->
+<!-- Add Company User Modal -->
 <div id="teamUserModal" class="modal-backdrop hidden">
     <div class="modal-card">
-        <h3 style="margin-top: 0;">Add Team Member</h3>
+        <h3 style="margin-top: 0;">Add Company User Account</h3>
         <form id="teamUserForm" class="stack">
             <label>
-                <span>Name *</span>
-                <input id="teamUsername" type="text" required>
+                <span>Company / Business Name *</span>
+                <input id="teamBusinessName" type="text" required placeholder="e.g. Acme Weaving Mills">
             </label>
             <label>
-                <span>Email *</span>
-                <input id="teamEmail" type="email" required placeholder="teammate@example.com">
+                <span>User Name *</span>
+                <input id="teamUsername" type="text" required placeholder="User contact name">
+            </label>
+            <label>
+                <span>Email Address *</span>
+                <input id="teamEmail" type="email" required placeholder="user@company.com">
             </label>
             <label>
                 <span>Password *</span>
@@ -190,21 +200,25 @@
             </label>
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
                 <button onclick="hideModal('teamUserModal')" class="btn secondary" type="button">Cancel</button>
-                <button class="btn primary" type="submit">Add User</button>
+                <button class="btn primary" type="submit">Create Account</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit Team User Modal -->
+<!-- Edit Company User Modal -->
 <div id="editTeamUserModal" class="modal-backdrop hidden">
     <div class="modal-card" style="max-width: 480px;">
-        <h3 style="margin-top: 0; font-size: 1.2rem;">Edit Teammate & Reset Password</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Owner can edit member name, email, active status, or reset password.</p>
+        <h3 style="margin-top: 0; font-size: 1.2rem;">Edit User Account & Password</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">System Owner can edit company name, user email, active status, or reset password.</p>
         <form id="editTeamUserForm" class="stack">
             <input type="hidden" id="editUserId">
             <label>
-                <span>Full Name *</span>
+                <span>Company / Business Name</span>
+                <input id="editUserBusinessName" type="text">
+            </label>
+            <label>
+                <span>User Contact Name *</span>
                 <input id="editUserName" type="text" required>
             </label>
             <label>
@@ -245,11 +259,11 @@ function toggleTeamSectionVisibility(visible) {
     localStorage.setItem('gst_show_team_users', visible ? 'true' : 'false');
 }
 
-async function toggleUserActiveStatus(userId, active, name, email) {
+async function toggleUserActiveStatus(userId, active, name, email, bizName) {
     try {
         const res = await apiFetch(`/api/team-user/${userId}`, {
             method: 'PUT',
-            body: JSON.stringify({ name, email, active })
+            body: JSON.stringify({ name, email, active, business_name: bizName })
         });
         if (res.success) {
             const badge = document.getElementById(`userStatusBadge-${userId}`);
@@ -267,9 +281,10 @@ async function toggleUserActiveStatus(userId, active, name, email) {
     }
 }
 
-function openEditTeammateModal(id, name, email, active) {
+function openEditTeammateModal(id, name, bizName, email, active) {
     document.getElementById('editUserId').value = id;
     document.getElementById('editUserName').value = name;
+    document.getElementById('editUserBusinessName').value = bizName || name;
     document.getElementById('editUserEmail').value = email;
     document.getElementById('editUserPassword').value = '';
     document.getElementById('editUserActive').checked = Boolean(active);
@@ -277,13 +292,13 @@ function openEditTeammateModal(id, name, email, active) {
 }
 
 async function deleteTeammate(userId, name) {
-    if (!confirm(`Are you sure you want to delete teammate "${name}"?`)) return;
+    if (!confirm(`Are you sure you want to delete user account "${name}"?`)) return;
     try {
         const res = await apiFetch(`/api/team-user/${userId}`, {
             method: 'DELETE'
         });
         if (res.success) window.location.reload();
-        else alert(res.message || 'Failed to delete teammate.');
+        else alert(res.message || 'Failed to delete user.');
     } catch (err) {
         alert('Error: ' + err.message);
     }
@@ -312,7 +327,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const settingsForm = document.getElementById('settingsForm');
-    if (settingsForm) {
+    const saveProfileBtn = document.getElementById('saveBusinessProfileBtn');
+
+    if (settingsForm && saveProfileBtn) {
+        const enableSaveBtn = () => {
+            saveProfileBtn.disabled = false;
+            saveProfileBtn.style.opacity = '1';
+            saveProfileBtn.style.cursor = 'pointer';
+        };
+
+        settingsForm.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('input', enableSaveBtn);
+            field.addEventListener('change', enableSaveBtn);
+        });
+
         settingsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const selectedOpt = profStateSelect ? profStateSelect.options[profStateSelect.selectedIndex] : null;
@@ -341,9 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                if (res.success) alert('Business settings updated successfully!');
+                if (res.success) {
+                    showToast('Business settings updated successfully!', 'success');
+                    saveProfileBtn.disabled = true;
+                    saveProfileBtn.style.opacity = '0.5';
+                    saveProfileBtn.style.cursor = 'not-allowed';
+                }
             } catch (err) {
-                alert('Failed to update settings: ' + err.message);
+                showToast('Failed to update settings: ' + err.message, 'error');
             }
         });
     }
@@ -353,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         teamForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = {
+                business_name: document.getElementById('teamBusinessName').value,
                 username: document.getElementById('teamUsername').value,
                 email: document.getElementById('teamEmail').value,
                 password: document.getElementById('teamPassword').value,
@@ -363,9 +397,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(payload)
                 });
                 if (res.success) window.location.reload();
-                else alert(res.message || 'Failed to add teammate');
+                else alert(res.message || 'Failed to add user account');
             } catch (err) {
-                alert('Failed to add teammate: ' + err.message);
+                alert('Failed to add user account: ' + err.message);
             }
         });
     }
@@ -376,6 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const userId = document.getElementById('editUserId').value;
             const payload = {
+                business_name: document.getElementById('editUserBusinessName').value,
                 name: document.getElementById('editUserName').value,
                 email: document.getElementById('editUserEmail').value,
                 active: document.getElementById('editUserActive').checked,

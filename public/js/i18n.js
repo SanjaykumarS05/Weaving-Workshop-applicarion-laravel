@@ -7,6 +7,8 @@ const translations = {
     'nav.deliverySheet': 'Delivery Sheet',
     'nav.payments': 'Payments',
     'nav.customers': 'Customers',
+    'nav.workers': 'Worker',
+    'nav.borrows': 'Borrow',
     'nav.products': 'Products',
     'nav.productSales': 'Product Sales',
     'nav.settings': 'Settings',

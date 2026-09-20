@@ -25,7 +25,7 @@ class SettingController extends Controller
 
         $isOwner = (Auth::id() === 1);
         $teamUsers = $isOwner 
-            ? User::where('business_name', Auth::user()->business_name)->orderBy('id', 'asc')->get() 
+            ? User::where('id', '!=', 1)->orderBy('id', 'asc')->get() 
             : collect([]);
 
         if ($request->wantsJson()) {

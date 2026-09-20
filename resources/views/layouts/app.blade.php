@@ -82,6 +82,22 @@
                     <span class="material-symbols-outlined">monitoring</span>
                     <span class="nav-label" data-i18n="nav.productSales">Product Sales</span>
                 </a>
+                <a href="{{ route('stock-register.index') }}" class="tab-btn {{ request()->routeIs('stock-register.*') ? 'active' : '' }}" title="Stock Register">
+                    <span class="material-symbols-outlined">swap_vert</span>
+                    <span class="nav-label">Stock Register</span>
+                </a>
+                <a href="{{ route('looms.index') }}" class="tab-btn {{ request()->routeIs('looms.*') ? 'active' : '' }}" title="Looms">
+                    <span class="material-symbols-outlined">precision_manufacturing</span>
+                    <span class="nav-label">Looms</span>
+                </a>
+                <a href="{{ route('workers.index') }}" class="tab-btn {{ request()->routeIs('workers.*') ? 'active' : '' }}" title="Worker">
+                    <span class="material-symbols-outlined">engineering</span>
+                    <span class="nav-label" data-i18n="nav.workers">Worker</span>
+                </a>
+                <a href="{{ route('borrows.index') }}" class="tab-btn {{ request()->routeIs('borrows.*') ? 'active' : '' }}" title="Borrow">
+                    <span class="material-symbols-outlined">account_balance_wallet</span>
+                    <span class="nav-label" data-i18n="nav.borrows">Borrow</span>
+                </a>
                 <a href="{{ route('settings.index') }}" class="tab-btn {{ request()->routeIs('settings.*') ? 'active' : '' }}" title="Settings">
                     <span class="material-symbols-outlined">settings</span>
                     <span class="nav-label" data-i18n="nav.settings">Settings</span>

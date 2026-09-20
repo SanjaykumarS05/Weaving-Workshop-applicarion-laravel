@@ -164,6 +164,13 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials.']);
         }
 
+        if (!$user->active) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Your account has been deactivated by system administrator.'], 403);
+            }
+            return back()->withErrors(['email' => 'Your account has been deactivated by system administrator.']);
+        }
+
         if (!$user->is_verified) {
             // Generate OTP for unverified user
             $otp = sprintf("%06d", mt_rand(100000, 999999));
@@ -321,26 +328,40 @@ class AuthController extends Controller
     {
         $currentUser = Auth::user();
         if (!$currentUser || $currentUser->id !== 1) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only primary workspace owner (User ID 1) can manage team users.'], 403);
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only system owner (User ID 1) can manage user accounts.'], 403);
         }
 
         $request->validate([
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'username' => 'required|string',
+            'business_name' => 'nullable|string',
         ]);
+
+        $bizName = trim($request->business_name ?? $request->username);
 
         $user = User::create([
             'name' => trim($request->username),
             'email' => strtolower(trim($request->email)),
-            'business_name' => $currentUser->business_name,
+            'business_name' => $bizName,
             'password' => Hash::make($request->password),
-            'role' => 'user',
-            'trial_started_at' => $currentUser->trial_started_at,
+            'role' => 'admin',
+            'trial_started_at' => Carbon::now(),
             'plan' => 'unlimited',
             'trial_days' => 0,
             'active' => true,
             'is_verified' => true,
+        ]);
+
+        Setting::firstOrCreate(['user_id' => $user->id], [
+            'profile_name' => $user->business_name,
+            'profile_email' => $user->email,
+            'profile_declaration' => 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
+            'profile_signatory' => 'Authorised Signatory',
+            'default_tax_rate' => 12.00,
+            'invoice_prefix' => 'GST',
+            'invoice_start_value' => 1,
+            'composition_valid_days' => 30,
         ]);
 
         return response()->json(['success' => true, 'user' => $user]);
@@ -350,7 +371,7 @@ class AuthController extends Controller
     {
         $currentUser = Auth::user();
         if (!$currentUser || $currentUser->id !== 1) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only primary workspace owner (User ID 1) can edit team users.'], 403);
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only system owner (User ID 1) can edit user accounts.'], 403);
         }
 
         $user = User::findOrFail($id);
@@ -360,6 +381,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email,' . $id,
             'active' => 'required|boolean',
             'password' => 'nullable|string|min:6',
+            'business_name' => 'nullable|string',
         ]);
 
         $data = [
@@ -368,20 +390,24 @@ class AuthController extends Controller
             'active' => (bool)$request->active,
         ];
 
+        if (!empty($request->business_name)) {
+            $data['business_name'] = trim($request->business_name);
+        }
+
         if (!empty($request->password)) {
             $data['password'] = Hash::make($request->password);
         }
 
         $user->update($data);
 
-        return response()->json(['success' => true, 'message' => 'Teammate details updated successfully.', 'user' => $user]);
+        return response()->json(['success' => true, 'message' => 'User account updated successfully.', 'user' => $user]);
     }
 
     public function deleteTeamUser($id)
     {
         $currentUser = Auth::user();
         if (!$currentUser || $currentUser->id !== 1) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only primary workspace owner (User ID 1) can delete team users.'], 403);
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only system owner (User ID 1) can delete user accounts.'], 403);
         }
 
         $user = User::findOrFail($id);
@@ -390,6 +416,6 @@ class AuthController extends Controller
         }
 
         $user->delete();
-        return response()->json(['success' => true, 'message' => 'Teammate deleted successfully.']);
+        return response()->json(['success' => true, 'message' => 'User account deleted successfully.']);
     }
 }

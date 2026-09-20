@@ -8,13 +8,19 @@
         <h2 class="card-title" style="margin: 0;" data-i18n="nav.productSales">Product Sales Report</h2>
     </div>
 
-    <!-- Filter Row -->
-    <form method="GET" action="{{ route('product-sales.index') }}" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search Product Name..." style="flex: 1; min-width: 200px;">
-        <input type="date" name="from_date" value="{{ request('from_date') }}">
-        <input type="date" name="to_date" value="{{ request('to_date') }}">
-        <button class="btn secondary" type="submit" data-i18n="common.search">Filter</button>
-        <a href="{{ route('product-sales.index') }}" class="btn ghost" data-i18n="common.reset">Reset</a>
+    <!-- Filter Bar -->
+    <form method="GET" action="{{ route('product-sales.index') }}" class="filter-bar">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search Product Name..." class="filter-search-input">
+        <div class="filter-date-item">
+            <span>From:</span>
+            <input type="date" name="from_date" value="{{ request('from_date') }}">
+        </div>
+        <div class="filter-date-item">
+            <span>To:</span>
+            <input type="date" name="to_date" value="{{ request('to_date') }}">
+        </div>
+        <button class="btn secondary filter-reset-btn" type="submit" data-i18n="common.search">Filter</button>
+        <a href="{{ route('product-sales.index') }}" class="btn secondary filter-reset-btn" style="display: inline-flex; align-items: center;" data-i18n="common.reset">Reset</a>
     </form>
 
     <div class="table-responsive">

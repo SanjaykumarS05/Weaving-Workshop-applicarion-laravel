@@ -10,6 +10,10 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductSalesController;
+use App\Http\Controllers\StockRegisterController;
+use App\Http\Controllers\LoomController;
+use App\Http\Controllers\WorkerController;
+use App\Http\Controllers\BorrowController;
 use App\Http\Controllers\SettingController;
 
 // Auth Routes
@@ -70,6 +74,31 @@ Route::middleware(['auth'])->group(function () {
 
     // Product Sales Report
     Route::get('/product-sales', [ProductSalesController::class, 'index'])->name('product-sales.index');
+
+    // Stock Register (Standalone Ledger)
+    Route::get('/stock-register', [StockRegisterController::class, 'index'])->name('stock-register.index');
+    Route::post('/api/stock-register', [StockRegisterController::class, 'store'])->name('stock-register.store');
+    Route::put('/api/stock-register/{id}', [StockRegisterController::class, 'update'])->name('stock-register.update');
+    Route::delete('/api/stock-register/{id}', [StockRegisterController::class, 'destroy'])->name('stock-register.destroy');
+
+    // Looms (Standalone Warp & Production Ledger)
+    Route::get('/looms', [LoomController::class, 'index'])->name('looms.index');
+    Route::post('/api/looms', [LoomController::class, 'store'])->name('looms.store');
+    Route::put('/api/looms/{id}', [LoomController::class, 'update'])->name('looms.update');
+    Route::delete('/api/looms/{id}', [LoomController::class, 'destroy'])->name('looms.destroy');
+
+    // Workers Master Directory
+    Route::get('/workers', [WorkerController::class, 'index'])->name('workers.index');
+    Route::get('/api/workers', [WorkerController::class, 'index'])->name('api.workers.index');
+    Route::post('/api/workers', [WorkerController::class, 'store'])->name('workers.store');
+    Route::put('/api/workers/{id}', [WorkerController::class, 'update'])->name('workers.update');
+    Route::delete('/api/workers/{id}', [WorkerController::class, 'destroy'])->name('workers.destroy');
+
+    // Worker Borrow / Advance Ledger
+    Route::get('/borrows', [BorrowController::class, 'index'])->name('borrows.index');
+    Route::post('/api/borrows', [BorrowController::class, 'store'])->name('borrows.store');
+    Route::put('/api/borrows/{id}', [BorrowController::class, 'update'])->name('borrows.update');
+    Route::delete('/api/borrows/{id}', [BorrowController::class, 'destroy'])->name('borrows.destroy');
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');

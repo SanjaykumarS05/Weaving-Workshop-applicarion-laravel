@@ -99,10 +99,20 @@ html.sidebar-collapsed-init .sidebar-brand {
   padding: 20px 10px;
 }
 
+.sidebar.collapsed .page-tabs,
+html.sidebar-collapsed-init .page-tabs {
+  padding: 14px 6px;
+}
+
 .sidebar.collapsed .tab-btn,
 html.sidebar-collapsed-init .tab-btn {
   justify-content: center;
-  padding: 12px 0;
+  padding: 0;
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  margin: 0 auto;
+  border-radius: 14px;
   gap: 0;
 }
 
@@ -202,6 +212,7 @@ html.sidebar-collapsed-init .sidebar-toggle-btn .material-symbols-outlined {
   white-space: nowrap;
 }
 
+/* Sidebar Navigation Tabs & Sleek Dark Scrollbar */
 .page-tabs {
   padding: 16px 12px;
   display: flex;
@@ -209,6 +220,25 @@ html.sidebar-collapsed-init .sidebar-toggle-btn .material-symbols-outlined {
   gap: 6px;
   flex: 1;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.page-tabs::-webkit-scrollbar {
+  width: 4px;
+}
+
+.page-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-tabs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+}
+
+.page-tabs::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .tab-btn {
@@ -251,6 +281,17 @@ html.sidebar-collapsed-init .sidebar-toggle-btn .material-symbols-outlined {
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: var(--radius-md);
+}
+
+.sidebar.collapsed .logout-btn,
+html.sidebar-collapsed-init .logout-btn {
+  margin: 14px auto;
+  padding: 0;
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  justify-content: center;
+  border-radius: 14px;
 }
 
 .logout-btn:hover {
@@ -444,9 +485,11 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
-.filter-date-item input[type="date"] {
+.filter-date-item input[type="date"],
+.filter-bar input[type="date"] {
   width: 165px !important;
 }
 
@@ -798,5 +841,78 @@ input:checked + .slider-round:before {
   background: var(--primary-gradient);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+/* Toast Notification Styles */
+#toastContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-notification {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 420px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-left: 4px solid #3b82f6;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-notification.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 12px 25px -5px rgba(16, 185, 129, 0.45), 0 8px 10px -6px rgba(5, 150, 105, 0.25);
+}
+
+.toast-notification.success .toast-icon {
+  color: #ffffff !important;
+  font-size: 22px;
+}
+
+.toast-notification.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 12px 25px -5px rgba(239, 68, 68, 0.45);
+}
+
+.toast-notification.error .toast-icon {
+  color: #ffffff !important;
+  font-size: 22px;
+}
+
+.toast-notification.info {
+  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 12px 25px -5px rgba(99, 102, 241, 0.45);
+}
+
+.toast-notification.info .toast-icon {
+  color: #ffffff !important;
+  font-size: 22px;
 }
 
