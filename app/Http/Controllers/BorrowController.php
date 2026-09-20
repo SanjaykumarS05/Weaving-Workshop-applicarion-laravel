@@ -65,16 +65,58 @@ class BorrowController extends Controller
         // Sorting
         $query->orderBy('entry_date', 'desc')->orderBy('id', 'desc');
 
-        // Export JSON handler
-        if ($request->has('export') && $request->export == '1') {
+        // Export handler
+        if ($request->has('export')) {
+            $exportType = strtolower($request->export);
+
+            if ($exportType === 'csv' || $exportType === 'excel') {
+                $timestamp = \Carbon\Carbon::now()->format('d-m-Y_H-i');
+                $filename = "Worker_Borrow_{$timestamp}.csv";
+
+                $exportEntries = $query->get();
+                return response()->streamDownload(function() use ($exportEntries, $totalGiven, $totalReturned, $netBalance, $workerBalances) {
+                    $file = fopen('php://output', 'w');
+                    fputs($file, "\xEF\xBB\xBF");
+
+                    fputcsv($file, ['Date', 'Worker Name', 'Given to Worker (Rs)', 'Returned from Worker (Rs)', 'Worker Borrow Balance (Rs)', 'Remarks / Notes']);
+
+                    foreach ($exportEntries as $b) {
+                        fputcsv($file, [
+                            \Carbon\Carbon::parse($b->entry_date)->format('d/m/Y'),
+                            $b->worker->name ?? 'Unknown',
+                            $b->type === 'given' ? number_format($b->amount, 2) : '-',
+                            $b->type === 'returned' ? number_format($b->amount, 2) : '-',
+                            number_format(abs($workerBalances[$b->worker_id] ?? 0), 2),
+                            $b->notes ?? '-',
+                        ]);
+                    }
+
+                    fputcsv($file, [
+                        'ALL-TIME OVERALL TOTALS',
+                        '',
+                        'Rs ' . number_format($totalGiven, 2),
+                        'Rs ' . number_format($totalReturned, 2),
+                        'Rs ' . number_format($netBalance, 2),
+                        ''
+                    ]);
+
+                    fclose($file);
+                }, $filename, [
+                    'Content-Type' => 'text/csv; charset=UTF-8',
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0',
+                ]);
+            }
+
             $exportEntries = $query->get()->map(function($b) use ($workerBalances) {
                 return [
                     'id' => $b->id,
                     'date' => \Carbon\Carbon::parse($b->entry_date)->format('d/m/Y'),
                     'worker_name' => $b->worker->name ?? 'Unknown',
                     'worker_phone' => $b->worker->phone ?? '-',
-                    'qty_in' => $b->type === 'given' ? number_format($b->amount, 2) : '-', // Given to Worker
-                    'qty_out' => $b->type === 'returned' ? number_format($b->amount, 2) : '-', // Returned by Worker
+                    'qty_in' => $b->type === 'given' ? number_format($b->amount, 2) : '-',
+                    'qty_out' => $b->type === 'returned' ? number_format($b->amount, 2) : '-',
                     'calc_balance' => number_format(abs($workerBalances[$b->worker_id] ?? 0), 2),
                     'notes' => $b->notes ?? '-',
                 ];

@@ -149,13 +149,16 @@ function downloadCSV(filename, headers, rows, totalsRow) {
     safeFilename += '.csv';
   }
 
-  const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvStr);
+  const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
+  link.setAttribute("href", url);
   link.setAttribute("download", safeFilename);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // Global Date-Time Timestamp Formatter (e.g. 20-09-2026_23-42)

@@ -92,6 +92,49 @@ class LoomController extends Controller
 
         if ($request->has('export') || $request->wantsJson()) {
             if ($request->has('export')) {
+                $exportType = strtolower($request->export);
+
+                if ($exportType === 'csv' || $exportType === 'excel') {
+                    $timestamp = Carbon::now()->format('d-m-Y_H-i');
+                    $filename = "Heavy_Looms_{$timestamp}.csv";
+
+                    return response()->streamDownload(function() use ($sortedEntries, $totalQtyIn, $totalQtyOut, $currentBalance) {
+                        $file = fopen('php://output', 'w');
+                        fputs($file, "\xEF\xBB\xBF");
+
+                        fputcsv($file, ['Date', 'Worker Name', 'Warp / Production Details', 'Given to Loom (m)', 'Cloth Received from Worker (m)', 'Remaining Warp Balance (m)', 'Notes / Remarks']);
+
+                        foreach ($sortedEntries as $e) {
+                            fputcsv($file, [
+                                Carbon::parse($e->entry_date)->format('d/m/Y'),
+                                $e->worker->name ?? 'All Workers',
+                                $e->details ?? '-',
+                                $e->qty_in > 0 ? number_format($e->qty_in, 3) : '-',
+                                $e->qty_out > 0 ? number_format($e->qty_out, 3) : '-',
+                                number_format(abs($e->calc_balance ?? 0), 3),
+                                $e->notes ?? '-',
+                            ]);
+                        }
+
+                        fputcsv($file, [
+                            'ALL-TIME OVERALL TOTALS',
+                            '',
+                            '',
+                            number_format($totalQtyIn, 3) . ' m',
+                            number_format($totalQtyOut, 3) . ' m',
+                            number_format(abs($currentBalance), 3) . ' m',
+                            ''
+                        ]);
+
+                        fclose($file);
+                    }, $filename, [
+                        'Content-Type' => 'text/csv; charset=UTF-8',
+                        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                        'Pragma' => 'no-cache',
+                        'Expires' => '0',
+                    ]);
+                }
+
                 $exportEntries = $sortedEntries->map(function($e) {
                     return [
                         'date' => Carbon::parse($e->entry_date)->format('d/m/Y'),

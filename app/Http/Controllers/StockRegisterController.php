@@ -104,6 +104,51 @@ class StockRegisterController extends Controller
 
         if ($request->has('export') || $request->wantsJson()) {
             if ($request->has('export')) {
+                $exportType = strtolower($request->export);
+                
+                if ($exportType === 'csv' || $exportType === 'excel') {
+                    $timestamp = Carbon::now()->format('d-m-Y_H-i');
+                    $filename = "Stock_Register_{$timestamp}.csv";
+
+                    return response()->streamDownload(function() use ($sortedEntries, $totalQtyIn, $totalQtyOut, $currentBalance, $totalCones) {
+                        $file = fopen('php://output', 'w');
+                        fputs($file, "\xEF\xBB\xBF"); // UTF-8 BOM for MS Excel
+
+                        fputcsv($file, ['Date', 'Worker Name', 'Item / Quality', 'Cone Count (Details)', 'Material Given to Worker (kg)', 'Material Received from Worker (kg)', 'Balance with Worker (kg)', 'Conversion / Notes']);
+
+                        foreach ($sortedEntries as $e) {
+                            fputcsv($file, [
+                                Carbon::parse($e->entry_date)->format('d/m/Y'),
+                                $e->worker->name ?? 'All Workers',
+                                $e->item_name,
+                                $e->details ?? '-',
+                                $e->qty_in > 0 ? number_format($e->qty_in, 3) : '-',
+                                $e->qty_out > 0 ? number_format($e->qty_out, 3) : '-',
+                                number_format(abs($e->calc_balance ?? 0), 3),
+                                $e->conversion_notes ?? '-',
+                            ]);
+                        }
+
+                        fputcsv($file, [
+                            'ALL-TIME OVERALL TOTALS',
+                            '',
+                            '',
+                            number_format($totalCones) . ' Cones',
+                            number_format($totalQtyIn, 3) . ' kg',
+                            number_format($totalQtyOut, 3) . ' kg',
+                            number_format(abs($currentBalance), 3) . ' kg',
+                            ''
+                        ]);
+
+                        fclose($file);
+                    }, $filename, [
+                        'Content-Type' => 'text/csv; charset=UTF-8',
+                        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                        'Pragma' => 'no-cache',
+                        'Expires' => '0',
+                    ]);
+                }
+
                 $exportEntries = $sortedEntries->map(function($e) {
                     return [
                         'date' => Carbon::parse($e->entry_date)->format('d/m/Y'),

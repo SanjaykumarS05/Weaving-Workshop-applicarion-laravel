@@ -582,42 +582,31 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmExportBtn.addEventListener('click', async () => {
             const format = document.querySelector('input[name="exportFormat"]:checked')?.value || 'excel';
             const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('export', '1');
 
-            try {
-                confirmExportBtn.disabled = true;
-                confirmExportBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">progress_activity</span> Exporting...';
-
-                const response = await fetch(`${window.location.pathname}?${urlParams.toString()}`, {
-                    headers: { 'Accept': 'application/json' }
-                });
-                const data = await response.json();
-
-                if (!data.success || !data.entries) {
-                    showToast('Failed to fetch data for export.', 'error');
-                    return;
-                }
-
+            if (format === 'excel') {
+                urlParams.set('export', 'excel');
+                window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
                 exportModal.classList.add('hidden');
-                const timestamp = typeof getFormattedTimestamp === 'function' ? getFormattedTimestamp() : new Date().toISOString().slice(0, 10);
+                showToast('Excel report download started!', 'success');
+            } else {
+                urlParams.set('export', 'json');
+                try {
+                    confirmExportBtn.disabled = true;
+                    confirmExportBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">progress_activity</span> Exporting...';
 
-                if (format === 'excel') {
-                    const headers = ['Date', 'Worker Name', 'Item / Quality', 'Cone Count (Details)', 'Material Given to Worker (kg)', 'Material Received from Worker (kg)', 'Balance with Worker (kg)', 'Conversion / Notes'];
-                    const rows = data.entries.map(e => [
-                        e.date,
-                        e.worker_name,
-                        e.item_name,
-                        e.details,
-                        e.qty_in,
-                        e.qty_out,
-                        e.calc_balance,
-                        e.notes
-                    ]);
-                    const totalsRow = ['ALL-TIME OVERALL TOTALS', '', '', `${data.totals.total_cones} Cones`, `${data.totals.total_given} kg`, `${data.totals.total_received} kg`, `${data.totals.balance} kg`, ''];
-                    
-                    downloadCSV(`Stock_Register_${timestamp}.csv`, headers, rows, totalsRow);
-                    showToast('Excel report downloaded successfully!', 'success');
-                } else {
+                    const response = await fetch(`${window.location.pathname}?${urlParams.toString()}`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const data = await response.json();
+
+                    if (!data.success || !data.entries) {
+                        showToast('Failed to fetch data for export.', 'error');
+                        return;
+                    }
+
+                    exportModal.classList.add('hidden');
+                    const timestamp = typeof getFormattedTimestamp === 'function' ? getFormattedTimestamp() : new Date().toISOString().slice(0, 10);
+
                     openPDFReport(
                         'Stock Register Ledger Report',
                         ['Date', 'Worker Name', 'Item / Quality', 'Cone Count', 'Material Given', 'Material Received', 'Worker Balance', 'Notes'],
@@ -631,12 +620,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         `Stock_Register_${timestamp}`
                     );
                     showToast('PDF print preview opened!', 'success');
+                } catch (err) {
+                    showToast('Error generating export report.', 'error');
+                } finally {
+                    confirmExportBtn.disabled = false;
+                    confirmExportBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">download</span> Download';
                 }
-            } catch (err) {
-                showToast('Error generating export report.', 'error');
-            } finally {
-                confirmExportBtn.disabled = false;
-                confirmExportBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">download</span> Download';
             }
         });
     }
